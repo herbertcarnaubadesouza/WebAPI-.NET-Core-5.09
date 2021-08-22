@@ -1,32 +1,55 @@
-﻿using API.Data;
+﻿using API.Config;
+using API.Data;
 using API.Models;
+using API.Models.DTOs.Requests;
+using API.Models.DTOs.Respostas;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace API.Controllers
 {
     [Route("api/[controller]")] //api/funcionarios
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class FuncionariosController : ControllerBase
     {
         private readonly ContextHerbert _context;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly JwtConfig _jwtConfig;
 
-        public FuncionariosController(ContextHerbert context)
+        public FuncionariosController(ContextHerbert context, UserManager<IdentityUser> userManager,
+            IOptionsMonitor<JwtConfig> options)
         {
             _context = context;
+            _userManager = userManager;
+            _jwtConfig = options.CurrentValue;
         }
+
         
+
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetItems()
         {
             var items = await _context.Funcionarios.ToListAsync();            
             return Ok(items);
         }
+
+
+
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetItemById(int id)
