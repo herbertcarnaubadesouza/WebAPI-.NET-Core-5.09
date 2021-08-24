@@ -11,6 +11,7 @@ namespace API.Data
     public class ContextHerbert :IdentityDbContext
     {
         public virtual DbSet<Funcionarios> Funcionarios{ get; set; }
+        public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
 
 
         public ContextHerbert(DbContextOptions<ContextHerbert>options) : base(options)
