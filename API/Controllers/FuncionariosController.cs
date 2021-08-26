@@ -1,4 +1,5 @@
 ﻿using API.Config;
+using API.Core.IConfiguration;
 using API.Data;
 using API.Models;
 using API.Models.DTOs.Requests;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -26,25 +28,20 @@ namespace API.Controllers
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class FuncionariosController : ControllerBase
     {
-        private readonly ContextHerbert _context;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly JwtConfig _jwtConfig;
+        private readonly ILogger<FuncionariosController> _logger;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public FuncionariosController(ContextHerbert context, UserManager<IdentityUser> userManager,
-            IOptionsMonitor<JwtConfig> options)
+        public FuncionariosController(ILogger<FuncionariosController> logger, IUnitOfWork unitOfWork)
         {
-            _context = context;
-            _userManager = userManager;
-            _jwtConfig = options.CurrentValue;
+            _logger = logger;
+            _unitOfWork = unitOfWork;
         }
-
-        
 
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetItems()
         {
-            var items = await _context.Funcionarios.ToListAsync();            
+            var items = await _unitOfWork.Funcionarios.GetItems();            
             return Ok(items);
         }
 
@@ -54,10 +51,10 @@ namespace API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetItemById(int id)
         {
-            var item = await _context.Funcionarios.FirstOrDefaultAsync(x => x.Id == id);
+            var item = await _unitOfWork.Funcionarios.GetItemById(id);
             if (item == null)
             {
-                return NotFound();
+                return NotFound(); // codigo 404 do http
             }
 
             return Ok(item);
@@ -71,8 +68,8 @@ namespace API.Controllers
                 return new JsonResult("Something Went Wrong") { StatusCode = 500 };
             }
 
-            await _context.Funcionarios.AddAsync(funcionarios);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.Funcionarios.CreateItem(funcionarios);
+            await _unitOfWork.CompleteAsync();
             return CreatedAtAction("GetItemById", new { funcionarios.Id }, funcionarios);
         }
 
@@ -84,17 +81,8 @@ namespace API.Controllers
                 return BadRequest();
             }
 
-            var funcionarioExiste = await _context.Funcionarios.FirstOrDefaultAsync(x => x.Id == id);
-            if (funcionarioExiste == null)
-            {
-                return NotFound();
-            }
-            funcionarioExiste.Id = funcionario.Id;
-            funcionarioExiste.Nome = funcionario.Nome;
-            funcionarioExiste.Idade = funcionario.Idade;
-            funcionarioExiste.Empregado = funcionario.Empregado;
-
-            await _context.SaveChangesAsync();
+            await _unitOfWork.Funcionarios.Update(funcionario);
+            await _unitOfWork.CompleteAsync();
             return NoContent();
 
         }
@@ -103,14 +91,14 @@ namespace API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteFuncionario(int id)
         {
-            var funcionarioExistente = await _context.Funcionarios.FirstOrDefaultAsync(x => x.Id == id);
+            var funcionarioExistente = await _unitOfWork.Funcionarios.GetItemById(id);
             if (funcionarioExistente == null)
             {
-                return NotFound();
+                return BadRequest();
             }
 
-           _context.Funcionarios.Remove(funcionarioExistente);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.Funcionarios.Delete(id);
+            await _unitOfWork.CompleteAsync();
             return Ok(funcionarioExistente);
 
         }

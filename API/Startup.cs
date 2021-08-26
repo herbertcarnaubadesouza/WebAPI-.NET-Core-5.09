@@ -1,4 +1,5 @@
 using API.Config;
+using API.Core.IConfiguration;
 using API.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -38,7 +39,7 @@ namespace API
             services.AddDbContext<ContextHerbert>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")
                     ));
-            var key = Encoding.ASCII.GetBytes(Configuration["JwtConfig:Secret"]);
+            var key = Encoding.ASCII.GetBytes(Configuration["JwtConfig:Secret"]); //decodificando em bytes
             var tokenValidationParams = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
@@ -49,11 +50,12 @@ namespace API
                 RequireExpirationTime = false
             };
             services.AddSingleton(tokenValidationParams);
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             //Jwt Authentication
             services.AddAuthentication(options =>
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme; //bearer = portador
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 
@@ -64,7 +66,7 @@ namespace API
                 jwt.TokenValidationParameters = tokenValidationParams;
             });
 
-            services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+            services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddEntityFrameworkStores<ContextHerbert>();
 
             services.Configure<IdentityOptions>(options =>

@@ -25,14 +25,14 @@ namespace API.Controllers
    
     public class AuthenticationController : ControllerBase
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         
         private readonly JwtConfig _jwtConfig;
         private readonly TokenValidationParameters _tokenValidationParams;
         private readonly ContextHerbert _contextHerbert;
         
 
-        public AuthenticationController(UserManager<IdentityUser>userManager,
+        public AuthenticationController(UserManager<ApplicationUser>userManager,
               TokenValidationParameters tokenValidationParams,
               ContextHerbert contextHerbert,
               IOptionsMonitor<JwtConfig>options)
@@ -65,7 +65,7 @@ namespace API.Controllers
                     }) ;
                 }
                 
-                var newUser = new IdentityUser() { Email = user.Email, UserName = user.UserName };
+                var newUser = new ApplicationUser() { Email = user.Email, UserName = user.UserName };
                 var isCreated = await _userManager.CreateAsync(newUser, user.Password);
                 
 
@@ -171,7 +171,7 @@ namespace API.Controllers
         }
 
 
-        private async Task<AuthenticationResult> GenerateJwtToken(IdentityUser user)
+        private async Task<AuthenticationResult> GenerateJwtToken(ApplicationUser user)
         {
            
             var jwtTokenHandler = new JwtSecurityTokenHandler(); // gera o token
